@@ -25,6 +25,7 @@ class VerbandConfig(NamedTuple):
     full: str         # full name
     mandant_id: int
     season_id: int
+    region_ids: list[int] | None = None  # if set, search each region separately
 
 
 VERBANDE: list[VerbandConfig] = [
@@ -35,6 +36,8 @@ VERBANDE: list[VerbandConfig] = [
     VerbandConfig("HBDV",  "Hansestadt Bremen Dart Verband e.V.",        565, 26),
     VerbandConfig("HDV",   "Hessischer Dart Verband e.V.",               573, 14),
     VerbandConfig("LDVH",  "Landesdartverband Hamburg e.V.",              571, 17),
+    VerbandConfig("NDV",   "Niedersächsischer Dartverband e.V.",         570,  9, [17, 19, 18, 20, 22]),
+    VerbandConfig("NDV",   "Niedersächsischer Dartverband e.V.",         570,  6, [21]),
     VerbandConfig("NWDV",  "Nordrhein Westfälischer Dartverband e.V.",   566, 10),
     VerbandConfig("RPDV",  "Rheinland Pfälzischer Dartverband",          578, 25),
     VerbandConfig("SADV",  "Saarländischer Dartverband e.V.",            568, 15),
@@ -54,6 +57,20 @@ def _normalize(s: str) -> str:
 def _search_verband(cfg: VerbandConfig, last_name: str) -> list[dict]:
     """Search a single Verband for members with the given last name."""
     url = f"{DDV_BASE}/{cfg.mandant_id}/search"
+
+    if cfg.region_ids:
+        # Query each region and merge results
+        all_members = []
+        for region_id in cfg.region_ids:
+            payload = {"type": "PLAYER", "seasonId": cfg.season_id, "regionId": region_id, "name": last_name}
+            try:
+                resp = requests.post(url, json=payload, timeout=DDV_TIMEOUT)
+                if resp.status_code == 200:
+                    all_members.extend(resp.json().get("members", []))
+            except Exception:
+                logger.debug("DDV search failed for %s region %d / %s", cfg.short, region_id, last_name, exc_info=True)
+        return all_members
+
     payload = {"type": "PLAYER", "seasonId": cfg.season_id, "name": last_name}
     try:
         resp = requests.post(url, json=payload, timeout=DDV_TIMEOUT)
