@@ -7,7 +7,7 @@ import re
 from collections import OrderedDict
 from functools import wraps
 
-from flask import Flask, render_template, request, jsonify, Response, abort
+from flask import Flask, render_template, request, jsonify, Response, abort, make_response
 
 from .data import get_store, init_scheduler, refresh
 from .fetcher import fetch_player_events
@@ -51,6 +51,57 @@ def create_app() -> Flask:
     @app.route("/interesting/")
     def interesting_view():
         return _render_view("interesting")
+
+    # ── SEO ──
+
+    @app.route("/robots.txt")
+    def robots_txt():
+        lines = [
+            "User-agent: *",
+            "Allow: /",
+            "Disallow: /admin",
+            "Disallow: /api/",
+            "",
+            "Sitemap: https://next.jqve.dev/sitemap.xml",
+        ]
+        resp = make_response("\n".join(lines))
+        resp.headers["Content-Type"] = "text/plain"
+        return resp
+
+    @app.route("/sitemap.xml")
+    def sitemap_xml():
+        store = get_store()
+        updated = store["last_updated"].strftime("%Y-%m-%d") if store else "2026-01-01"
+
+        urls = [
+            ("https://next.jqve.dev/", "daily", "1.0"),
+            ("https://next.jqve.dev/youth/", "daily", "0.9"),
+            ("https://next.jqve.dev/interesting/", "daily", "0.8"),
+        ]
+
+        # Add player pages
+        if store:
+            seen = set()
+            for p in store["main_players"] + store["youth_players"]:
+                pid = p.api_stats.get("id")
+                if pid and pid not in seen:
+                    seen.add(pid)
+                    urls.append((f"https://next.jqve.dev/player/{pid}", "weekly", "0.6"))
+
+        xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+        xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+        for loc, freq, priority in urls:
+            xml.append("  <url>")
+            xml.append(f"    <loc>{loc}</loc>")
+            xml.append(f"    <lastmod>{updated}</lastmod>")
+            xml.append(f"    <changefreq>{freq}</changefreq>")
+            xml.append(f"    <priority>{priority}</priority>")
+            xml.append("  </url>")
+        xml.append("</urlset>")
+
+        resp = make_response("\n".join(xml))
+        resp.headers["Content-Type"] = "application/xml"
+        return resp
 
     # ── Admin (basic auth) ──
 
@@ -188,14 +239,29 @@ def _render_view(view: str) -> str:
         players = [p for p in main_players if normalize_name(p.name) in INTERESTING_PLAYERS]
         title = "Interesting Order"
         table_id = "interesting-table"
+        seo = {
+            "title": "Interesting Players - Next Gen Order of Merit - PDC Europe Darts",
+            "description": "Curated selection of interesting players in the PDC Europe Next Gen Order of Merit 2026. Stats, rankings, and tournament results.",
+            "canonical": "https://next.jqve.dev/interesting/",
+        }
     elif view == "youth":
         players = youth_players
         title = "Youth Order of Merit"
         table_id = "youth-table"
+        seo = {
+            "title": "Youth Order of Merit - Next Gen - PDC Europe Darts",
+            "description": f"PDC Europe Next Gen Youth Order of Merit 2026. Rankings and stats for {len(youth_players)} youth dart players.",
+            "canonical": "https://next.jqve.dev/youth/",
+        }
     else:
         players = main_players
         title = "Main Order of Merit"
         table_id = "main-table"
+        seo = {
+            "title": "Next Gen Order of Merit 2026 - PDC Europe Dart Rankings",
+            "description": f"Live PDC Europe Next Gen Order of Merit 2026. Full rankings, stats, and prize money for {len(main_players)} dart players.",
+            "canonical": "https://next.jqve.dev/",
+        }
 
     return render_template(
         "rankings.html",
@@ -205,6 +271,7 @@ def _render_view(view: str) -> str:
         is_interesting=(view == "interesting"),
         view=view,
         players=players,
+        seo=seo,
         main_q=store["main_q"],
         youth_q=store["youth_q"],
         all_q=store["all_q"],

@@ -3,7 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Next Gen Order of Merit{% endblock %}</title>
+  <title>{% block title %}Next Gen Order of Merit - PDC Europe Dart Rankings{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Live PDC Europe Next Gen Order of Merit rankings, stats, and tournament results for all players in the 2026 season.{% endblock %}">
+  <link rel="canonical" href="{% block canonical %}https://next.jqve.dev/{% endblock %}">
+
+  {# Open Graph #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Next Gen Order of Merit">
+  <meta property="og:title" content="{% block og_title %}Next Gen Order of Merit - PDC Europe Dart Rankings{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Live PDC Europe Next Gen Order of Merit rankings, stats, and tournament results for all players in the 2026 season.{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}https://next.jqve.dev/{% endblock %}">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://next.jqve.dev/static/android-chrome-512x512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+
+  {# Twitter Card #}
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{% block tw_title %}Next Gen Order of Merit{% endblock %}">
+  <meta name="twitter:description" content="{% block tw_description %}Live PDC Europe Next Gen dart rankings and player stats.{% endblock %}">
+
+  {# Crawling hints #}
+  <meta name="robots" content="index, follow">
+  {% block extra_meta %}{% endblock %}
+
+  {# Structured Data #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Next Gen Order of Merit",
+    "url": "https://next.jqve.dev",
+    "description": "PDC Europe Next Gen Order of Merit rankings and player statistics",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://next.jqve.dev/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  {% block structured_data %}{% endblock %}
+
+  {# Favicons #}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <meta name="theme-color" content="#050508">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -704,11 +752,11 @@
   </style>
 </head>
 <body>
-  <nav class="topnav">
+  <nav class="topnav" aria-label="Main navigation">
     <div class="nav-group">
-      <a href="/" class="nav-link{% if view == 'main' %} active{% endif %}">Main</a>
-      <a href="/youth/" class="nav-link{% if view == 'youth' %} active{% endif %}">Youth</a>
-      <a href="/interesting/" class="nav-link{% if view == 'interesting' %} active{% endif %}">Interesting</a>
+      <a href="/" class="nav-link{% if view == 'main' %} active{% endif %}"{% if view == 'main' %} aria-current="page"{% endif %}>Main</a>
+      <a href="/youth/" class="nav-link{% if view == 'youth' %} active{% endif %}"{% if view == 'youth' %} aria-current="page"{% endif %}>Youth</a>
+      <a href="/interesting/" class="nav-link{% if view == 'interesting' %} active{% endif %}"{% if view == 'interesting' %} aria-current="page"{% endif %}>Interesting</a>
     </div>
   </nav>
 
@@ -717,8 +765,9 @@
   </main>
 
   <footer class="footer">
-    Data from <a href="https://dartconnect.com" target="_blank" rel="noopener">DartConnect</a>
-    &middot; Updated {{ last_updated.strftime('%d %b %Y, %H:%M') if last_updated else 'N/A' }}
+    <p>Data from <a href="https://dartconnect.com" target="_blank" rel="noopener">DartConnect</a>
+    &middot; Updated {{ last_updated.strftime('%d %b %Y, %H:%M') if last_updated else 'N/A' }}</p>
+    <p>&copy; {{ last_updated.strftime('%Y') if last_updated else '2026' }} Next Gen Order of Merit. PDC Europe Next Gen dart rankings and player statistics.</p>
   </footer>
 
   {% block scripts %}{% endblock %}

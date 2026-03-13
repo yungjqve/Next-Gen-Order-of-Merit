@@ -1,6 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - Next Gen Order of Merit{% endblock %}
+{% block title %}{{ seo.title }}{% endblock %}
+{% block meta_description %}{{ seo.description }}{% endblock %}
+{% block canonical %}{{ seo.canonical }}{% endblock %}
+{% block og_title %}{{ seo.title }}{% endblock %}
+{% block og_description %}{{ seo.description }}{% endblock %}
+{% block og_url %}{{ seo.canonical }}{% endblock %}
+{% block tw_title %}{{ seo.title }}{% endblock %}
+{% block tw_description %}{{ seo.description }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": "PDC Europe Next Gen Order of Merit 2026 - {{ title }}",
+  "description": "{{ seo.description }}",
+  "url": "{{ seo.canonical }}",
+  "sport": "Darts",
+  "organizer": {
+    "@type": "Organization",
+    "name": "PDC Europe",
+    "url": "https://www.pdc-europe.tv"
+  },
+  "location": {
+    "@type": "Place",
+    "name": "Germany"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "numberOfItems": {{ players|length }},
+  "itemListElement": [
+    {% for player in players[:20] %}
+    {
+      "@type": "ListItem",
+      "position": {{ player.rank }},
+      "url": "https://next.jqve.dev/player/{{ player.api_stats.id }}",
+      "name": "{{ player.name }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <section class="hero">

@@ -1,6 +1,42 @@
 {% extends "base.html" %}
 
-{% block title %}{{ player.name }} - Next Gen Order of Merit{% endblock %}
+{% set p_desc = player.name ~ " - Rank #" ~ player.rank ~ " in the PDC Europe Next Gen Order of Merit 2026. PPR: " ~ ("%.1f"|format(player.api_stats.ppr|float) if player.api_stats.ppr else "N/A") ~ ", Prize Money: " ~ format_eur(player.money_num) ~ ". Full stats and tournament history." %}
+
+{% block title %}{{ player.name }} - Next Gen Order of Merit - PDC Europe Darts{% endblock %}
+{% block meta_description %}{{ p_desc }}{% endblock %}
+{% block canonical %}https://next.jqve.dev/player/{{ player.api_stats.id }}{% endblock %}
+{% block og_title %}{{ player.name }} - #{{ player.rank }} Next Gen Order of Merit{% endblock %}
+{% block og_description %}{{ p_desc }}{% endblock %}
+{% block og_url %}https://next.jqve.dev/player/{{ player.api_stats.id }}{% endblock %}
+{% block tw_title %}{{ player.name }} - Next Gen Order of Merit{% endblock %}
+{% block tw_description %}{{ p_desc }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "{{ player.name }}",
+  "url": "https://next.jqve.dev/player/{{ player.api_stats.id }}",
+  {% if player.api_stats.iso2_country %}"nationality": "{{ player.api_stats.iso2_country }}",{% endif %}
+  "description": "PDC Europe Next Gen dart player, ranked #{{ player.rank }} in the 2026 Order of Merit",
+  "memberOf": {
+    "@type": "SportsOrganization",
+    "name": "PDC Europe Next Gen"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Rankings", "item": "https://next.jqve.dev/"},
+    {"@type": "ListItem", "position": 2, "name": "{{ player.name }}", "item": "https://next.jqve.dev/player/{{ player.api_stats.id }}"}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <section class="hero">
