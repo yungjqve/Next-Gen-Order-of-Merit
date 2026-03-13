@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.name }} - Next Gen Order of Merit{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <a href="/" class="back-link">&larr; Back to Rankings</a>
+  <h1 class="hero-title">
+    {% if player.api_stats.iso2_country %}
+    <span class="player-flag">{{ country_flag(player.api_stats.iso2_country) }}</span>
+    {% endif %}
+    {{ player.name }}
+  </h1>
+  <p class="hero-subtitle">
+    Rank #{{ player.rank }}
+    {% if player_verband %}&middot; {{ player_verband }}{% endif %}
+    {% if player.is_youth %}&middot; Youth{% endif %}
+  </p>
+</section>
+
+{# ── Overview Stats ── #}
+<section class="panel" style="margin-bottom: 24px">
+  <div class="panel-header">
+    <h2 class="panel-title">Overview</h2>
+  </div>
+  <div class="profile-stats">
+    <div class="stat-group">
+      <h4 class="stat-group-title">Record</h4>
+      <div class="details-grid">
+        <div class="stat-item">
+          <span class="stat-label">Matches</span>
+          <span class="stat-value">{{ player.api_stats.match_wins|default(0) }}W / {{ (player.api_stats.played_matches|default(0)) - (player.api_stats.match_wins|default(0)) }}L</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Win Rate</span>
+          <span class="stat-value">{{ "%.1f"|format(player.api_stats.match_win_percentage|float) if player.api_stats.match_win_percentage else "-" }}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Legs</span>
+          <span class="stat-value">{{ player.api_stats.leg_wins|default(0) }}W / {{ player.api_stats.leg_lost|default(0) }}L</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Leg Win %</span>
+          <span class="stat-value">{{ player.api_stats.leg_win_percentage|default(0) }}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Leg Diff</span>
+          <span class="stat-value">{{ "%+d"|format(player.api_stats.leg_diff|int) if player.api_stats.leg_diff is not none else "-" }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Events Played</span>
+          <span class="stat-value">{{ events|length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-group">
+      <h4 class="stat-group-title">Throwing</h4>
+      <div class="details-grid">
+        <div class="stat-item">
+          <span class="stat-label">PPR</span>
+          <span class="stat-value">{{ "%.2f"|format(player.api_stats.ppr|float) if player.api_stats.ppr else "-" }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">With Throw</span>
+          <span class="stat-value">{{ format_pct(player.api_stats.legs_withdarts_wins, player.api_stats.legs_withdarts) }}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Break Rate</span>
+          <span class="stat-value">{{ "%.1f"|format(player.api_stats.leg_againdarts_win_percentage|float) if player.api_stats.leg_againdarts_win_percentage else "-" }}%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">180s</span>
+          <span class="stat-value">{{ player.api_stats.total_180s|default(0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">177s</span>
+          <span class="stat-value">{{ player.api_stats.total_177s|default(0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">174s</span>
+          <span class="stat-value">{{ player.api_stats.total_174s|default(0) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-group">
+      <h4 class="stat-group-title">Achievements</h4>
+      <div class="details-grid">
+        <div class="stat-item">
+          <span class="stat-label">Event Wins</span>
+          <span class="stat-value">{{ player.api_stats.event_winner|default(0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Short Legs</span>
+          <span class="stat-value">{{ (player.api_stats.total_nine_darters|default(0)|int) + (player.api_stats.total_ten_darters|default(0)|int) + (player.api_stats.total_eleven_darters|default(0)|int) + (player.api_stats.total_twelve_darters|default(0)|int) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">9-Darters</span>
+          <span class="stat-value">{{ player.api_stats.total_nine_darters|default(0) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">High Finishes</span>
+          <span class="stat-value">{{ (player.api_stats.total_finish_101_130|default(0)|int) + (player.api_stats.total_finish_131_160|default(0)|int) + (player.api_stats.total_finish_161_170|default(0)|int) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Points</span>
+          <span class="stat-value">{{ player.api_stats.points|default(0) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-group">
+      <h4 class="stat-group-title">Money</h4>
+      <div class="details-grid">
+        <div class="stat-item stat-item--highlight">
+          <span class="stat-label">Total</span>
+          <span class="stat-value">{{ format_eur(player.money_num) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Round Money</span>
+          <span class="stat-value">{{ format_eur(player.money_round_num) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Bonus Money</span>
+          <span class="stat-value">{{ format_eur(player.money_bonus_num) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ── Tournament History ── #}
+<section class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Tournament History</h2>
+    <span class="panel-hint">Click an event for details</span>
+  </div>
+
+  {% for t in tournaments %}
+  <div class="tournament-group">
+    <div class="tournament-header">
+      <span class="tournament-name">{{ t.name }}</span>
+      <span class="tournament-date">{{ t.date }}</span>
+    </div>
+
+    {% for ev in t.events %}
+    {% set tot = ev.totals %}
+    <div class="event-row" onclick="this.classList.toggle('open')">
+      <div class="event-summary">
+        <div class="event-name-col">
+          {% if ev.is_winner %}
+          <span class="event-badge event-badge--winner">W</span>
+          {% elif ev.best_round_label and ev.best_round_label != 'None' %}
+          <span class="event-badge">{{ ev.best_round_label }}</span>
+          {% endif %}
+          <span class="event-name">{{ ev.key }} - {{ ev.name }}</span>
+        </div>
+        <div class="event-quick-stats">
+          <span class="event-stat" title="PPR">{{ "%.1f"|format(tot.ppr|float) }}</span>
+          <span class="event-stat" title="Matches">{{ tot.match_wins }}W/{{ tot.played_matches - tot.match_wins }}L</span>
+          <span class="event-stat event-stat--money" title="Money">{{ format_eur(tot.money / 100) }}</span>
+        </div>
+      </div>
+      <div class="event-details">
+        {# ── Combined stats ── #}
+        <div class="stat-group">
+          <h4 class="stat-group-title">Combined</h4>
+          <div class="details-grid">
+            <div class="stat-item">
+              <span class="stat-label">PPR</span>
+              <span class="stat-value">{{ "%.2f"|format(tot.ppr|float) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Matches</span>
+              <span class="stat-value">{{ tot.match_wins }}W / {{ tot.played_matches - tot.match_wins }}L ({{ "%.1f"|format(tot.match_win_percentage) }}%)</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Legs</span>
+              <span class="stat-value">{{ tot.leg_wins }}W / {{ tot.leg_lost }}L ({{ "%.1f"|format(tot.leg_win_percentage) }}%)</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Leg Diff</span>
+              <span class="stat-value">{{ "%+d"|format(tot.leg_diff) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">With Throw</span>
+              <span class="stat-value">{{ format_pct(tot.legs_withdarts_wins, tot.legs_withdarts) }}%</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Break Rate</span>
+              <span class="stat-value">{{ "%.1f"|format(tot.leg_againdarts_win_percentage) }}%</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">180s</span>
+              <span class="stat-value">{{ tot.total_180s }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Short Legs</span>
+              <span class="stat-value">{{ tot.total_nine_darters + tot.total_ten_darters + tot.total_eleven_darters + tot.total_twelve_darters }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">High Finishes</span>
+              <span class="stat-value">{{ tot.total_finish_101_130 + tot.total_finish_131_160 + tot.total_finish_161_170 }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Money</span>
+              <span class="stat-value">{{ format_eur(tot.money / 100) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Points</span>
+              <span class="stat-value">{{ tot.points }}</span>
+            </div>
+          </div>
+        </div>
+
+        {# ── Per-phase breakdown (only if multiple phases) ── #}
+        {% if not ev.single %}
+        {% for phase in ev.phases %}
+        {% set d = phase.data %}
+        <div class="stat-group">
+          <h4 class="stat-group-title">{{ phase.phase }}</h4>
+          <div class="details-grid">
+            <div class="stat-item">
+              <span class="stat-label">PPR</span>
+              <span class="stat-value">{{ "%.2f"|format(d.ppr|float) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Matches</span>
+              <span class="stat-value">{{ d.match_wins }}W / {{ d.played_matches|int - d.match_wins|int }}L</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Legs</span>
+              <span class="stat-value">{{ d.leg_wins }}W / {{ d.leg_lost }}L</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">180s</span>
+              <span class="stat-value">{{ d.total_180s }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Money</span>
+              <span class="stat-value">{{ format_eur(d.money|float / 100) }}</span>
+            </div>
+            {% if d.best_round_label and d.best_round_label != 'None' %}
+            <div class="stat-item">
+              <span class="stat-label">Best Round</span>
+              <span class="stat-value">{{ d.best_round_label }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .back-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity var(--transition);
+  }
+  .back-link:hover {
+    opacity: 0.8;
+  }
+
+  .profile-stats {
+    padding: 20px 24px;
+  }
+
+  /* Tournament history */
+  .tournament-group {
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .tournament-group:last-child {
+    border-bottom: none;
+  }
+
+  .tournament-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .tournament-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .tournament-date {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .event-row {
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background var(--transition);
+  }
+  .event-row:last-child {
+    border-bottom: none;
+  }
+  .event-row:hover {
+    background: var(--glass-bg-hover);
+  }
+
+  .event-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 16px;
+  }
+
+  .event-name-col {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .event-name {
+    font-size: 14px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .event-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .event-badge--winner {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.3);
+  }
+
+  .event-quick-stats {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .event-stat {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .event-stat--money {
+    color: var(--success);
+    min-width: 70px;
+    text-align: right;
+  }
+
+  .event-details {
+    display: none;
+    padding: 4px 24px 16px;
+  }
+
+  .event-row.open .event-details {
+    display: block;
+    animation: slideDown 0.2s ease-out;
+  }
+
+  .event-row.open {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .stat-item--highlight {
+    border-color: rgba(52, 211, 153, 0.3);
+    background: rgba(52, 211, 153, 0.08);
+  }
+
+  @media (max-width: 768px) {
+    .profile-stats {
+      padding: 12px;
+    }
+
+    .tournament-header {
+      padding: 10px 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .tournament-name {
+      font-size: 13px;
+    }
+
+    .tournament-date {
+      font-size: 11px;
+    }
+
+    .event-summary {
+      padding: 10px 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .event-quick-stats {
+      gap: 12px;
+      width: 100%;
+    }
+
+    .event-stat {
+      font-size: 12px;
+    }
+
+    .event-name {
+      font-size: 13px;
+    }
+
+    .event-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+    }
+
+    .event-details {
+      padding: 4px 12px 12px;
+    }
+  }
+</style>
+{% endblock %}

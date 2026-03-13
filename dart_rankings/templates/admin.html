@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Verbände{% endblock %}
+
+{% block content %}
+<style>
+  .admin-btn {
+    padding: 9px 18px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .admin-btn:hover {
+    background: rgba(96, 165, 250, 0.25);
+    border-color: rgba(96, 165, 250, 0.5);
+  }
+  .admin-btn.danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  .admin-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+  .verband-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .verband-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+  }
+  .tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .tag-remove:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+  }
+  .verband-select {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .verband-select:focus {
+    border-color: var(--accent);
+  }
+  .verband-select option {
+    background: #1a1a2e;
+    color: var(--text-primary);
+  }
+  .add-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .add-form .search-input {
+    max-width: 300px;
+  }
+  .admin-section {
+    padding: 20px 24px;
+  }
+  .admin-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: rgba(52, 211, 153, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 200;
+  }
+  .admin-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @media (max-width: 768px) {
+    .admin-section { padding: 14px; }
+    .add-form .search-input { max-width: 100%; flex: 1; }
+  }
+</style>
+
+<h1 class="hero-title" style="text-align:center;margin-bottom:24px;">Verbände Admin</h1>
+
+<section class="panel" style="margin-bottom: 24px;">
+  <div class="panel-header">
+    <h2 class="panel-title">Verbände verwalten</h2>
+  </div>
+  <div class="admin-section">
+    <div class="add-form">
+      <input type="text" id="new-verband" class="search-input" placeholder="Neuer Verband..." autocomplete="off">
+      <button class="admin-btn" id="add-btn">Hinzufügen</button>
+    </div>
+    <div class="verband-tags" id="verband-tags">
+      {% for v in verbande %}
+      <span class="verband-tag" data-name="{{ v }}">{{ v }}<button class="tag-remove" data-name="{{ v }}">&times;</button></span>
+      {% endfor %}
+      {% if not verbande %}
+      <span style="color:var(--text-muted);font-size:14px;">Noch keine Verbände angelegt.</span>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Spieler zuweisen</h2>
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" class="search-input" id="admin-search" placeholder="Spieler suchen..." autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+  <table class="player-table" id="admin-table">
+    <colgroup>
+      <col style="width:50px;">
+      <col>
+      <col style="width:180px;">
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th>Spieler</th>
+        <th>Verband</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr class="player-row{% if loop.index0 % 2 == 0 %} even{% endif %}" data-player-id="{{ player.api_stats.id }}">
+        <td class="num">{{ player.rank }}</td>
+        <td>
+          <div class="player-name">
+            {% if player.api_stats.iso2_country %}
+            <span class="player-flag">{{ country_flag(player.api_stats.iso2_country) }}</span>
+            {% endif %}
+            <span class="player-text">{{ player.name }}</span>
+          </div>
+        </td>
+        <td>
+          <select class="verband-select" data-player-id="{{ player.api_stats.id }}">
+            <option value="">—</option>
+            {% for v in verbande %}
+            <option value="{{ v }}"{% if assignments.get(player.api_stats.id|string) == v %} selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="admin-toast" id="toast"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const toast = document.getElementById('toast');
+  let toastTimer;
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // Add Verband
+  const addBtn = document.getElementById('add-btn');
+  const addInput = document.getElementById('new-verband');
+
+  function doAdd() {
+    const name = addInput.value.trim();
+    if (!name) return;
+    fetch('/api/verbande', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'add', name: name})
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        addInput.value = '';
+        location.reload();
+      } else {
+        showToast(d.error || 'Fehler');
+      }
+    });
+  }
+
+  addBtn.addEventListener('click', doAdd);
+  addInput.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+  // Remove Verband
+  document.getElementById('verband-tags').addEventListener('click', e => {
+    const btn = e.target.closest('.tag-remove');
+    if (!btn) return;
+    const name = btn.dataset.name;
+    if (!confirm('Verband "' + name + '" entfernen? Alle Zuweisungen werden gelöscht.')) return;
+    fetch('/api/verbande', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'remove', name: name})
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) location.reload();
+      else showToast(d.error || 'Fehler');
+    });
+  });
+
+  // Assign player
+  document.querySelectorAll('.verband-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      fetch('/api/verbande/assign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player_id: sel.dataset.playerId, verband: sel.value})
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) showToast('Gespeichert');
+        else showToast(d.error || 'Fehler');
+      });
+    });
+  });
+
+  // Search
+  const searchInput = document.getElementById('admin-search');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll('#admin-table tbody tr').forEach(row => {
+      const name = row.querySelector('.player-text');
+      const text = name ? name.textContent.toLowerCase() : '';
+      row.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

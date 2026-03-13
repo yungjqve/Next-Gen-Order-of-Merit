@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Next Gen Order of Merit{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1 class="hero-title">Next Gen Order of Merit</h1>
+  <p class="hero-subtitle">Made by Maximilian Niemecek</p>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">{{ title }}</h2>
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" class="search-input" id="player-search" placeholder="Search players..." autocomplete="off" spellcheck="false">
+    </div>
+    {% if verbande_list %}
+    <select class="verband-filter" id="verband-filter">
+      <option value="">All</option>
+      {% for v in verbande_list %}
+      <option value="{{ v }}">{{ v }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <span class="panel-hint">Click a player for full stats</span>
+  </div>
+
+  <table id="{{ table_id }}" class="player-table">
+    <colgroup>
+      <col class="col-rank">
+      <col class="col-name">
+      <col class="col-ppr">
+      <col class="col-prize">
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="num sortable" data-sort="rk">#</th>
+        <th>Player</th>
+        <th class="num sortable" data-sort="ppr">PPR</th>
+        <th class="num sortable" data-sort="prize">Prize</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr class="player-row {{ row_class(player) }}{% if loop.index0 % 2 == 0 %} even{% endif %}"
+          data-rk="{{ player.rank }}"
+          data-ppr="{{ player.api_stats.ppr|default(0) }}"
+          data-prize="{{ player.money_num | int }}"
+          data-verband="{{ assignments.get(player.api_stats.id|string, '') }}">
+        <td class="num">{{ player.rank }}</td>
+        <td>
+          <div class="player-name">
+            {% if player.api_stats.iso2_country %}
+            <span class="player-flag">{{ country_flag(player.api_stats.iso2_country) }}</span>
+            {% endif %}
+            {% if get_marker(player.name) %}
+            <span class="player-marker">{{ get_marker(player.name) }}</span>
+            {% endif %}
+            <span class="player-text">{{ player.name }}</span>
+            {% if not is_youth and player.is_youth %}
+            <span class="youth-indicator" title="Youth Player">Y</span>
+            {% endif %}
+          </div>
+        </td>
+        <td class="num">{{ "%.1f"|format(player.api_stats.ppr|float) if player.api_stats.ppr else "-" }}</td>
+        <td class="num">{{ format_eur(player.money_num) }}</td>
+      </tr>
+      <tr class="details-row" id="details-{{ loop.index0 }}">
+        <td colspan="4">
+          <div class="details-content">
+            {# ── Record ── #}
+            <div class="stat-group">
+              <h4 class="stat-group-title">Record</h4>
+              <div class="details-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Matches</span>
+                  <span class="stat-value">{{ player.api_stats.match_wins|default(0) }}W / {{ (player.api_stats.played_matches|default(0)) - (player.api_stats.match_wins|default(0)) }}L ({{ "%.1f"|format(player.api_stats.match_win_percentage|float) if player.api_stats.match_win_percentage else "-" }}%)</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Legs</span>
+                  <span class="stat-value">{{ player.api_stats.leg_wins|default(0) }}W / {{ player.api_stats.leg_lost|default(0) }}L ({{ player.api_stats.leg_win_percentage|default(0) }}%)</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Leg Diff</span>
+                  <span class="stat-value">{{ "%+d"|format(player.api_stats.leg_diff|int) if player.api_stats.leg_diff is not none else "-" }}</span>
+                </div>
+              </div>
+            </div>
+
+            {# ── Throwing ── #}
+            <div class="stat-group">
+              <h4 class="stat-group-title">Throwing</h4>
+              <div class="details-grid">
+                <div class="stat-item">
+                  <span class="stat-label">With Throw</span>
+                  <span class="stat-value">{{ format_pct(player.api_stats.legs_withdarts_wins, player.api_stats.legs_withdarts) }}%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Break Rate</span>
+                  <span class="stat-value">{{ "%.1f"|format(player.api_stats.leg_againdarts_win_percentage|float) if player.api_stats.leg_againdarts_win_percentage else "-" }}%</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">180s</span>
+                  <span class="stat-value">{{ player.api_stats.total_180s|default(0) }}</span>
+                </div>
+              </div>
+            </div>
+
+            {# ── Achievements ── #}
+            <div class="stat-group">
+              <h4 class="stat-group-title">Achievements</h4>
+              <div class="details-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Event Wins</span>
+                  <span class="stat-value">{{ player.api_stats.event_winner|default(0) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Short Legs</span>
+                  <span class="stat-value">{{ (player.api_stats.total_nine_darters|default(0)|int) + (player.api_stats.total_ten_darters|default(0)|int) + (player.api_stats.total_eleven_darters|default(0)|int) + (player.api_stats.total_twelve_darters|default(0)|int) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">9-Darters</span>
+                  <span class="stat-value">{{ player.api_stats.total_nine_darters|default(0) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">High Finishes</span>
+                  <span class="stat-value">{{ (player.api_stats.total_finish_101_130|default(0)|int) + (player.api_stats.total_finish_131_160|default(0)|int) + (player.api_stats.total_finish_161_170|default(0)|int) }}</span>
+                </div>
+              </div>
+            </div>
+
+            {# ── Money ── #}
+            <div class="stat-group">
+              <h4 class="stat-group-title">Money</h4>
+              <div class="details-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Round Money</span>
+                  <span class="stat-value">{{ format_eur(player.money_round_num) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Bonus Money</span>
+                  <span class="stat-value">{{ format_eur(player.money_bonus_num) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Points</span>
+                  <span class="stat-value">{{ player.api_stats.points|default(0) }}</span>
+                </div>
+              </div>
+            </div>
+            <a href="/player/{{ player.api_stats.id }}" class="full-stats-link" onclick="event.stopPropagation()">View Full Stats &rarr;</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="no-results" id="no-results">No players found</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  // Row expansion helper
+  function bindRowClick(row, index) {
+    row.addEventListener('click', () => {
+      const details = document.getElementById('details-' + index);
+      const isOpen = row.classList.toggle('open');
+      if (details) {
+        details.classList.toggle('open', isOpen);
+      }
+    });
+  }
+
+  document.querySelectorAll('tr.player-row').forEach(bindRowClick);
+
+  const searchInput = document.getElementById('player-search');
+  const verbandFilter = document.getElementById('verband-filter');
+  const noResults = document.getElementById('no-results');
+
+  function applyFilters() {
+    const query = searchInput.value.toLowerCase().trim();
+    const verband = verbandFilter ? verbandFilter.value : '';
+    const tbody = document.querySelector('table.player-table tbody');
+    const playerRows = tbody.querySelectorAll('tr.player-row');
+    let visibleCount = 0;
+    let evenIndex = 0;
+
+    playerRows.forEach(row => {
+      const nameEl = row.querySelector('.player-text');
+      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+      const rowVerband = row.dataset.verband || '';
+      const matchSearch = !query || name.includes(query);
+      const matchVerband = !verband || rowVerband === verband;
+      const match = matchSearch && matchVerband;
+      const details = row.nextElementSibling && row.nextElementSibling.classList.contains('details-row')
+        ? row.nextElementSibling : null;
+
+      row.style.display = match ? '' : 'none';
+      if (details) {
+        if (!match) {
+          details.style.display = 'none';
+          details.classList.remove('open');
+          row.classList.remove('open');
+        } else {
+          details.style.display = '';
+        }
+      }
+
+      if (match) {
+        row.classList.toggle('even', evenIndex % 2 === 0);
+        evenIndex++;
+        visibleCount++;
+      }
+    });
+
+    noResults.classList.toggle('visible', visibleCount === 0);
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  if (verbandFilter) verbandFilter.addEventListener('change', applyFilters);
+
+  // Sorting
+  document.querySelectorAll('table.player-table').forEach(table => {
+    const tbody = table.tBodies[0];
+    const headers = table.querySelectorAll('th.sortable');
+
+    headers.forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        const currentDir = th.classList.contains('asc') ? 'asc' : (th.classList.contains('desc') ? 'desc' : null);
+        const newDir = currentDir === 'asc' ? 'desc' : 'asc';
+
+        // Reset all headers
+        headers.forEach(h => h.classList.remove('asc', 'desc'));
+        th.classList.add(newDir);
+
+        // Get all player rows with their details
+        const rows = [];
+        const playerRows = tbody.querySelectorAll('tr.player-row');
+        playerRows.forEach(row => {
+          const details = row.nextElementSibling && row.nextElementSibling.classList.contains('details-row')
+            ? row.nextElementSibling : null;
+          rows.push({ player: row, details: details });
+        });
+
+        // Sort rows
+        rows.sort((a, b) => {
+          const av = Number(a.player.dataset[key] || 0);
+          const bv = Number(b.player.dataset[key] || 0);
+          return newDir === 'asc' ? av - bv : bv - av;
+        });
+
+        // Re-append in new order and update IDs
+        rows.forEach((item, newIndex) => {
+          tbody.appendChild(item.player);
+          if (item.details) {
+            item.details.id = 'details-' + newIndex;
+            tbody.appendChild(item.details);
+          }
+        });
+
+        // Re-apply even/odd striping and re-bind click events
+        const newPlayerRows = tbody.querySelectorAll('tr.player-row');
+        newPlayerRows.forEach((row, index) => {
+          row.classList.toggle('even', index % 2 === 0);
+
+          const newRow = row.cloneNode(true);
+          row.parentNode.replaceChild(newRow, row);
+          bindRowClick(newRow, index);
+        });
+
+        // Re-apply filters after sort
+        applyFilters();
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}
