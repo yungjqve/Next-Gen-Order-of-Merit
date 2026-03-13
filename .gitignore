@@ -26,6 +26,7 @@ Thumbs.db
 .env
 *.env
 
-# Claude
+# Internal / Claude
 CLAUDE.md
+INTERNAL.md
 .claude/
